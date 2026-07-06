@@ -28,7 +28,11 @@ The app is published with GitHub Pages:
 
 https://gab8511.github.io/wedding-planning-studio/
 
-Screenshots will live in [`docs/screenshots`](docs/screenshots) as the visual documentation set grows.
+![VowSuite dashboard preview](docs/screenshots/dashboard.png)
+
+![Wedding-day mode preview](docs/screenshots/day-mode.png)
+
+![About and version panel](docs/screenshots/about-version.png)
 
 ## Run Locally
 

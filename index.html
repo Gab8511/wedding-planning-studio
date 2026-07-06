@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VowSuite Wedding Planning Studio</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23211d1a'/%3E%3Ctext x='32' y='39' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%23fff4df'%3EVS%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -61,6 +62,7 @@
             <button id="undoBtn" class="icon-button" title="Undo last change" disabled><i data-lucide="undo-2"></i></button>
             <select id="modeSelect" class="mode-select" title="Planner or client view"><option>Planner mode</option><option>Client mode</option></select>
             <button id="newCoupleBtn" class="ghost-button" title="Start a blank plan"><i data-lucide="sparkles"></i>New couple</button>
+            <button id="aboutBtn" class="icon-button" title="About VowSuite"><i data-lucide="info"></i></button>
             <button id="exportBtn" class="icon-button" title="Export plan"><i data-lucide="download"></i></button>
             <label class="icon-button" title="Import plan">
               <i data-lucide="upload"></i>
@@ -78,7 +80,7 @@
                   <p class="eyebrow">Live plan health</p>
                   <h2>Executive snapshot</h2>
                 </div>
-                <button id="resetBtn" class="ghost-button"><i data-lucide="refresh-cw"></i>Reset demo</button>
+                <button id="resetBtn" class="ghost-button"><i data-lucide="refresh-cw"></i>Restore demo</button>
               </div>
               <div class="kpi-grid" id="kpiGrid"></div>
               <div class="insight-grid">
@@ -289,7 +291,13 @@
         </section>
 
         <section id="daymode" class="view">
-          <div class="section-head"><div><p class="eyebrow">On-site command mode</p><h2>Wedding-day mobile brief</h2></div><button id="exportMobileBriefBtn" class="ghost-button"><i data-lucide="smartphone"></i>Export mobile brief</button></div>
+          <div class="section-head">
+            <div><p class="eyebrow">On-site command mode</p><h2>Wedding-day mobile brief</h2></div>
+            <div class="toolbar">
+              <button id="exportBinderBtn" class="ghost-button"><i data-lucide="book-open-check"></i>Binder</button>
+              <button id="exportMobileBriefBtn" class="ghost-button"><i data-lucide="smartphone"></i>Mobile brief</button>
+            </div>
+          </div>
           <div class="day-grid">
             <section class="command-panel"><div class="section-head"><h2>Now and next</h2><span id="dayModeClock" class="pill">Live brief</span></div><div id="dayModeTimeline" class="day-timeline"></div></section>
             <section class="panel"><h2>Critical alerts</h2><div id="dayModeAlerts" class="mini-list"></div></section>
@@ -347,7 +355,7 @@
             <section class="panel"><h2>Catering report</h2><div id="cateringReport" class="mini-list"></div></section>
             <section class="panel"><h2>Timeline packets</h2><select id="packetType"><option>Planner packet</option><option>Vendor packet</option><option>Wedding party packet</option><option>Family packet</option><option>Client packet</option></select><div id="packetSections" class="check-grid"></div><div id="packetPreview" class="mini-list"></div></section>
             <section class="panel"><h2>Vendor timelines</h2><select id="vendorPacketSelect"></select><div id="vendorTimelinePreview" class="mini-list"></div></section>
-            <section class="panel"><h2>One-click export pack</h2><div class="toolbar"><button id="exportFullPackBtn" class="ghost-button"><i data-lucide="package"></i>Export all</button><button id="exportDayBriefBtn" class="ghost-button"><i data-lucide="clipboard-list"></i>Day brief</button><button id="exportHtmlPackBtn" class="ghost-button"><i data-lucide="file-code"></i>HTML packet</button></div><div id="exportPackSummary" class="mini-list"></div></section>
+            <section class="panel"><h2>One-click export pack</h2><div class="toolbar"><button id="exportFullPackBtn" class="ghost-button"><i data-lucide="package"></i>Export all</button><button id="exportDayBriefBtn" class="ghost-button"><i data-lucide="clipboard-list"></i>Day brief</button><button id="exportHtmlPackBtn" class="ghost-button"><i data-lucide="file-code"></i>HTML packet</button><button id="exportBinderReportBtn" class="ghost-button"><i data-lucide="book-open-check"></i>Binder</button></div><div id="exportPackSummary" class="mini-list"></div></section>
             <section class="panel"><h2>Calendar view</h2><div id="calendarView" class="mini-list"></div></section>
             <section class="panel"><h2>Readiness methodology</h2><div id="readinessMethod" class="mini-list"></div></section>
             <section class="panel"><h2>Snapshots and change log</h2><div class="toolbar"><button id="saveSnapshotBtn" class="ghost-button"><i data-lucide="archive"></i>Snapshot</button><select id="snapshotSelect"></select><button id="restoreSnapshotBtn" class="ghost-button"><i data-lucide="rotate-ccw"></i>Restore</button></div><div id="changeLogList" class="mini-list"></div></section>
@@ -421,6 +429,25 @@
         </section>
       </main>
     </div>
+    <dialog id="aboutDialog" class="about-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">About this studio</p>
+          <h2>VowSuite Wedding Planning Studio</h2>
+        </div>
+        <button id="closeAboutBtn" class="icon-button" title="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="about-grid">
+        <article><span>Version</span><strong id="aboutVersion">v1.0.0</strong></article>
+        <article><span>Storage</span><strong>Local browser</strong></article>
+        <article><span>Hosting</span><strong>GitHub Pages</strong></article>
+      </div>
+      <p class="muted">Plans are saved on this device. Export a JSON backup before clearing browser data, restoring demo data, or starting a new couple.</p>
+      <div class="toolbar">
+        <a class="ghost-link" href="https://gab8511.github.io/wedding-planning-studio/" target="_blank" rel="noreferrer">Live app</a>
+        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.1.0" target="_blank" rel="noreferrer">Release notes</a>
+      </div>
+    </dialog>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="./app.js"></script>
   </body>

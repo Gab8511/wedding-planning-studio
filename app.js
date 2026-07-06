@@ -1,6 +1,7 @@
 const STORAGE_KEY = "vowsuite-plan-v2";
 const LEGACY_STORAGE_KEY = "vowsuite-plan-v1";
 const COUPLES_STORAGE_KEY = "vowsuite-couples-v1";
+const APP_VERSION = "v1.1.0";
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const today = new Date();
 
@@ -398,6 +399,7 @@ function renderShell() {
   document.getElementById("venueContact").value = plan.profile.venueContact;
   document.getElementById("emergencyContact").value = plan.profile.emergencyContact;
   document.getElementById("portalPinSetting").value = plan.portal.pin;
+  setText("aboutVersion", APP_VERSION);
   setText("coupleTitle", plan.couple);
   setText("daysUntil", Math.max(0, daysUntil(plan.weddingDate)));
 }
@@ -849,7 +851,8 @@ function renderReports() {
     ["Planner packet", `${buildPacket("Planner packet").length} lines`],
     ["Vendor packet", `${buildPacket("Vendor packet").length} lines`],
     ["Client packet", `${buildPacket("Client packet").length} lines`],
-    ["Day brief", `${plan.runSheet.length} run-sheet moments`]
+    ["Day brief", `${plan.runSheet.length} run-sheet moments`],
+    ["Printable binder", `${getBinderSections().length} sections`]
   ].map(([title, copy]) => `<article class="mini-row"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(copy)}</small></article>`).join("");
   renderCalendarView();
 }
@@ -1152,9 +1155,10 @@ function enhanceAccessibility() {
   const labelMap = [
     ["addDecisionBtn", "Add decision"],
     ["undoBtn", "Undo last change"],
+    ["aboutBtn", "Open app version and storage details"],
     ["exportBtn", "Export plan"],
     ["printBtn", "Print brief"],
-    ["resetBtn", "Reset demo plan"],
+    ["resetBtn", "Restore demo plan"],
     ["newCoupleBtn", "Start a new couple plan"]
   ];
   labelMap.forEach(([id, label]) => {
@@ -1185,6 +1189,26 @@ function pushUndo() {
 
 function confirmAction(message) {
   return window.confirm(message);
+}
+
+function filenameSlug(value) {
+  return String(value || "vowsuite")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60) || "vowsuite";
+}
+
+function exportPlanBackup(reason) {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  downloadFile(`${filenameSlug(plan.couple)}-${reason}-${stamp}.json`, JSON.stringify(plan, null, 2), "application/json");
+  recordChange(`Exported ${reason.replaceAll("-", " ")} backup`);
+}
+
+function confirmWithBackup(actionLabel) {
+  const first = `Before ${actionLabel}, VowSuite can download a JSON backup of the current plan.\n\nChoose OK to download a backup first, or Cancel to continue without downloading.`;
+  if (confirmAction(first)) exportPlanBackup("pre-change-backup");
+  return confirmAction(`Continue and ${actionLabel}? This replaces the current active plan.`);
 }
 
 function activateView(viewName) {
@@ -1503,19 +1527,27 @@ document.getElementById("portalUnlockBtn").addEventListener("click", () => {
   }
 });
 document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirmAction("Reset to the demo plan? This replaces the current plan.")) return;
+  if (!confirmWithBackup("restore the sample demo plan")) return;
   pushUndo();
   localStorage.removeItem(LEGACY_STORAGE_KEY);
   plan = structuredClone(demoPlan);
-  recordChange("Reset demo plan");
+  recordChange("Restored sample demo plan");
   render();
 });
 document.getElementById("newCoupleBtn").addEventListener("click", () => {
-  if (!confirmAction("Start a blank plan for a new couple? Export or snapshot first if you need this plan later.")) return;
+  if (!confirmWithBackup("start a blank plan for a new couple")) return;
   pushUndo();
   localStorage.removeItem(LEGACY_STORAGE_KEY);
   plan = createBlankPlan();
   render();
+});
+document.getElementById("aboutBtn").addEventListener("click", () => {
+  const dialog = document.getElementById("aboutDialog");
+  if (dialog.showModal) dialog.showModal();
+  else window.alert(`VowSuite Wedding Planning Studio ${APP_VERSION}\nLocal browser storage\nGitHub Pages deployment`);
+});
+document.getElementById("closeAboutBtn").addEventListener("click", () => {
+  document.getElementById("aboutDialog").close();
 });
 document.getElementById("undoBtn").addEventListener("click", () => {
   const previous = undoStack.pop();
@@ -1527,6 +1559,7 @@ document.getElementById("undoBtn").addEventListener("click", () => {
 document.getElementById("printBtn").addEventListener("click", () => window.print());
 document.getElementById("exportBtn").addEventListener("click", () => {
   downloadFile("vowsuite-wedding-plan.json", JSON.stringify(plan, null, 2), "application/json");
+  recordChange("Exported JSON plan backup");
 });
 document.getElementById("exportGuestsBtn").addEventListener("click", () => {
   const headers = ["name", "email", "phone", "group", "status", "meal", "partySize", "plusOne", "inviteSent", "inviteMethod", "reminder", "tags", "notes"];
@@ -1568,6 +1601,8 @@ document.getElementById("exportDayBriefBtn").addEventListener("click", () => {
   downloadFile("vowsuite-wedding-day-brief.txt", `${plan.couple}\nWedding day brief\n${plan.weddingDate}\n\n${rows}`, "text/plain");
   recordChange("Exported wedding day brief");
 });
+document.getElementById("exportBinderBtn").addEventListener("click", () => exportWeddingDayBinder());
+document.getElementById("exportBinderReportBtn").addEventListener("click", () => exportWeddingDayBinder());
 document.getElementById("exportHtmlPackBtn").addEventListener("click", () => {
   downloadFile("vowsuite-client-packet.html", buildHtmlPacket(), "text/html");
   recordChange("Exported HTML client packet");
@@ -1705,6 +1740,104 @@ function downloadFile(filename, content, type) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function getBinderSections() {
+  const timelineRows = [...plan.runSheet].sort((a, b) => a.time.localeCompare(b.time));
+  const vendorRows = plan.vendors.filter(v => ["Booked", "Paid", "Proposal", "Shortlisted"].includes(v.stage));
+  const acceptedGuests = plan.guests.filter(g => g.status === "Accepted");
+  const mealRows = Object.entries(acceptedGuests.reduce((acc, guest) => {
+    acc[guest.meal] = (acc[guest.meal] || 0) + Number(guest.partySize || 1);
+    return acc;
+  }, {})).map(([meal, count]) => ({ title: meal, copy: `${count} meals` }));
+  const seatedRows = plan.tables.map(table => ({ title: table.name, copy: table.seats.filter(Boolean).join(", ") || "Open seating" }));
+  const paymentRows = plan.expenses
+    .filter(expense => Number(expense.actual || 0) > Number(expense.paid || 0))
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+    .map(expense => ({ title: `${expense.dueDate} ${expense.category}`, copy: `${expense.item}: ${money.format(Number(expense.actual || 0) - Number(expense.paid || 0))} due` }));
+  return [
+    { title: "Command Snapshot", rows: [
+      { title: "Couple", copy: plan.couple },
+      { title: "Venue", copy: plan.venue },
+      { title: "Wedding date", copy: plan.weddingDate },
+      { title: "Planner", copy: plan.profile.planner || "Planner TBD" },
+      { title: "Emergency", copy: plan.profile.emergencyContact || "Not set" }
+    ] },
+    { title: "Run Of Show", rows: timelineRows.map(row => ({ title: `${row.time} ${row.title}`, copy: `${row.location} | ${row.owner} | ${row.vendor || "Internal"} | ${row.notes || ""}` })) },
+    { title: "Vendor Call Sheet", rows: vendorRows.map(row => ({ title: row.name, copy: `${row.category} | ${row.contact || "Contact TBD"} | ${row.stage} | Balance ${money.format(row.balanceDue || 0)}` })) },
+    { title: "Critical Alerts", rows: buildRisks().map(row => ({ title: row.title, copy: row.copy })) },
+    { title: "Emergency And Key Contacts", rows: [
+      { title: "Planner", copy: plan.profile.planner || "Not set" },
+      { title: "Venue", copy: plan.profile.venueContact || "Not set" },
+      { title: "Emergency", copy: plan.profile.emergencyContact || "Not set" }
+    ] },
+    { title: "Catering And Guest Notes", rows: [
+      ...mealRows,
+      ...acceptedGuests.filter(guest => guest.notes || guest.tags).map(guest => ({ title: guest.name, copy: `${guest.meal} | ${guest.tags || "No tags"} | ${guest.notes || "No notes"}` }))
+    ] },
+    { title: "Photo And Ceremony", rows: [
+      ...plan.ceremony.map(row => ({ title: row.role, copy: `${row.name} | ${row.music || ""}` })),
+      ...plan.photos.map(row => ({ title: row.shot, copy: `${row.people} | ${row.priority}` })),
+      ...plan.photoGroups.map(row => ({ title: row.group, copy: row.people }))
+    ] },
+    { title: "Seating", rows: seatedRows },
+    { title: "Packing And Load-In", rows: [
+      ...plan.packing.map(row => ({ title: row.item, copy: `${row.owner} | ${row.status}` })),
+      ...plan.zones.map(row => ({ title: row.zone, copy: `${row.owner} | ${row.notes || ""}` }))
+    ] },
+    { title: "Payments Due", rows: paymentRows }
+  ].map(section => ({ ...section, rows: section.rows.length ? section.rows : [{ title: "No items tracked", copy: "Nothing to list for this section yet." }] }));
+}
+
+function exportWeddingDayBinder() {
+  downloadFile("vowsuite-wedding-day-binder.html", buildWeddingDayBinder(), "text/html");
+  recordChange("Exported printable wedding-day binder");
+  render();
+}
+
+function buildWeddingDayBinder() {
+  const sections = getBinderSections();
+  const rows = sections.map(section => `
+    <section>
+      <h2>${escapeHtml(section.title)}</h2>
+      ${section.rows.map(row => `<article><strong>${escapeHtml(row.title)}</strong><small>${escapeHtml(row.copy)}</small></article>`).join("")}
+    </section>
+  `).join("");
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(plan.couple)} Wedding-Day Binder</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color:#25211d;background:#f8f5f0}
+    body{margin:0;padding:32px;background:#f8f5f0}
+    main{max-width:980px;margin:auto;background:#fffdfa;border:1px solid #ded8d0;border-radius:8px;padding:28px}
+    header{border-bottom:3px solid #2f6b64;margin-bottom:24px;padding-bottom:18px}
+    h1{font-size:42px;margin:0 0 8px} h2{font-size:24px;margin:28px 0 12px;page-break-after:avoid}
+    p{color:#756f68;margin:0} article{break-inside:avoid;border:1px solid #ded8d0;background:#fffaf4;border-radius:8px;padding:12px;margin:8px 0}
+    strong,small{display:block} small{color:#756f68;margin-top:4px;line-height:1.45}
+    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:18px}
+    .meta article{background:#eef3ef}
+    @media print{body{padding:0;background:#fff}main{border:0;border-radius:0}.meta{grid-template-columns:repeat(3,1fr)}section{page-break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p>Printable wedding-day binder</p>
+      <h1>${escapeHtml(plan.couple)}</h1>
+      <p>${escapeHtml(plan.weddingDate)} at ${escapeHtml(plan.venue)}</p>
+      <div class="meta">
+        <article><strong>${Math.max(0, daysUntil(plan.weddingDate))}</strong><small>days remaining</small></article>
+        <article><strong>${plan.runSheet.length}</strong><small>run-sheet moments</small></article>
+        <article><strong>${plan.vendors.filter(v => ["Booked","Paid"].includes(v.stage)).length}</strong><small>secured vendors</small></article>
+      </div>
+    </header>
+    ${rows}
+  </main>
+</body>
+</html>`;
 }
 
 function buildHtmlPacket() {
