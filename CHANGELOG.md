@@ -9,3 +9,4 @@ All notable changes to VowSuite Wedding Planning Studio are documented here.
 - Added local browser storage with import/export support for moving wedding plans between devices.
 - Added repository metadata, live app link, and discoverable GitHub topics.
 - Added project documentation for running and deploying the static app.
+- Added license, privacy note, roadmap, issue templates, README badges, and preview documentation structure.
