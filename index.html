@@ -18,7 +18,8 @@
             <span>Planning Studio</span>
           </div>
         </div>
-        <nav class="nav-list" aria-label="Primary">
+        <button id="mobileNavToggle" class="mobile-nav-toggle" type="button" aria-expanded="false" aria-controls="primaryNav"><i data-lucide="menu"></i><span>Menu</span></button>
+        <nav id="primaryNav" class="nav-list" aria-label="Primary">
           <button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
           <button class="nav-item" data-view="guests"><i data-lucide="users"></i><span>Guests</span></button>
           <button class="nav-item" data-view="budget"><i data-lucide="wallet-cards"></i><span>Budget</span></button>
@@ -59,16 +60,21 @@
               <input id="weddingDate" type="date" />
             </label>
             <span id="autosaveStatus" class="save-status">Saved</span>
-            <button id="undoBtn" class="icon-button" title="Undo last change" disabled><i data-lucide="undo-2"></i></button>
             <select id="modeSelect" class="mode-select" title="Planner or client view"><option>Planner mode</option><option>Client mode</option></select>
             <button id="newCoupleBtn" class="ghost-button" title="Start a blank plan"><i data-lucide="sparkles"></i>New couple</button>
-            <button id="aboutBtn" class="icon-button" title="About VowSuite"><i data-lucide="info"></i></button>
-            <button id="exportBtn" class="icon-button" title="Export plan"><i data-lucide="download"></i></button>
-            <label class="icon-button" title="Import plan">
-              <i data-lucide="upload"></i>
-              <input id="importInput" type="file" accept="application/json" hidden />
-            </label>
-            <button id="printBtn" class="icon-button" title="Print brief"><i data-lucide="printer"></i></button>
+            <details class="actions-menu">
+              <summary class="icon-button" title="More actions"><i data-lucide="more-horizontal"></i></summary>
+              <div class="actions-popover">
+                <button id="undoBtn" class="menu-action" title="Undo last change" disabled><i data-lucide="undo-2"></i><span>Undo</span></button>
+                <button id="aboutBtn" class="menu-action" title="About VowSuite"><i data-lucide="info"></i><span>About</span></button>
+                <button id="exportBtn" class="menu-action" title="Export plan"><i data-lucide="download"></i><span>Export plan</span></button>
+                <label class="menu-action" title="Import plan">
+                  <i data-lucide="upload"></i><span>Import plan</span>
+                  <input id="importInput" type="file" accept="application/json" hidden />
+                </label>
+                <button id="printBtn" class="menu-action" title="Print brief"><i data-lucide="printer"></i><span>Print</span></button>
+              </div>
+            </details>
           </div>
         </header>
 
@@ -298,12 +304,19 @@
               <button id="exportMobileBriefBtn" class="ghost-button"><i data-lucide="smartphone"></i>Mobile brief</button>
             </div>
           </div>
+          <nav class="day-jumpbar" aria-label="Wedding-day quick jumps">
+            <button data-day-jump="dayModeTimeline"><i data-lucide="clock"></i><span>Now</span></button>
+            <button data-day-jump="dayModeAlerts"><i data-lucide="triangle-alert"></i><span>Alerts</span></button>
+            <button data-day-jump="dayModeVendors"><i data-lucide="briefcase-business"></i><span>Vendors</span></button>
+            <button data-day-jump="dayModeContacts"><i data-lucide="phone"></i><span>Contacts</span></button>
+            <button data-day-jump="dayModeChecklist"><i data-lucide="badge-check"></i><span>Checks</span></button>
+          </nav>
           <div class="day-grid">
-            <section class="command-panel"><div class="section-head"><h2>Now and next</h2><span id="dayModeClock" class="pill">Live brief</span></div><div id="dayModeTimeline" class="day-timeline"></div></section>
-            <section class="panel"><h2>Critical alerts</h2><div id="dayModeAlerts" class="mini-list"></div></section>
-            <section class="panel"><h2>Vendor call sheet</h2><div id="dayModeVendors" class="mini-list"></div></section>
-            <section class="panel"><h2>Emergency contacts</h2><div id="dayModeContacts" class="mini-list"></div></section>
-            <section class="panel"><h2>Final checks</h2><div id="dayModeChecklist" class="check-grid"></div></section>
+            <section class="command-panel day-section"><div class="section-head"><h2>Now and next</h2><span id="dayModeClock" class="pill">Live brief</span></div><div id="dayModeTimeline" class="day-timeline"></div></section>
+            <section class="panel day-section"><h2>Critical alerts</h2><div id="dayModeAlerts" class="mini-list"></div></section>
+            <section class="panel day-section"><h2>Vendor call sheet</h2><div id="dayModeVendors" class="mini-list"></div></section>
+            <section class="panel day-section"><h2>Emergency contacts</h2><div id="dayModeContacts" class="mini-list"></div></section>
+            <section class="panel day-section"><h2>Final checks</h2><div id="dayModeChecklist" class="check-grid"></div></section>
           </div>
         </section>
 
@@ -445,7 +458,8 @@
       <p class="muted">Plans are saved on this device. Export a JSON backup before clearing browser data, restoring demo data, or starting a new couple.</p>
       <div class="toolbar">
         <a class="ghost-link" href="https://gab8511.github.io/wedding-planning-studio/" target="_blank" rel="noreferrer">Live app</a>
-        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.1.0" target="_blank" rel="noreferrer">Release notes</a>
+        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.2.0" target="_blank" rel="noreferrer">Release notes</a>
+        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
       </div>
     </dialog>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>

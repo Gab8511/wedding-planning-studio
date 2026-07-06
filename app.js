@@ -1,7 +1,7 @@
 const STORAGE_KEY = "vowsuite-plan-v2";
 const LEGACY_STORAGE_KEY = "vowsuite-plan-v1";
 const COUPLES_STORAGE_KEY = "vowsuite-couples-v1";
-const APP_VERSION = "v1.1.0";
+const APP_VERSION = "v1.2.0";
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const today = new Date();
 
@@ -1214,12 +1214,30 @@ function confirmWithBackup(actionLabel) {
 function activateView(viewName) {
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === viewName));
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active-view", view.id === viewName));
+  document.body.classList.remove("nav-open");
+  document.getElementById("mobileNavToggle")?.setAttribute("aria-expanded", "false");
 }
 
 document.addEventListener("click", event => {
+  const mobileNavToggle = event.target.closest("#mobileNavToggle");
+  if (mobileNavToggle) {
+    const isOpen = document.body.classList.toggle("nav-open");
+    mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
+  }
   const nav = event.target.closest(".nav-item");
   if (nav) {
     activateView(nav.dataset.view);
+  }
+  const dayJump = event.target.closest("[data-day-jump]");
+  if (dayJump) {
+    const target = document.getElementById(dayJump.dataset.dayJump)?.closest(".day-section");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (event.target.closest(".menu-action")) {
+    setTimeout(() => document.querySelectorAll(".actions-menu[open]").forEach(menu => menu.removeAttribute("open")), 0);
+  }
+  if (!event.target.closest(".actions-menu")) {
+    document.querySelectorAll(".actions-menu[open]").forEach(menu => menu.removeAttribute("open"));
   }
   const searchResult = event.target.closest("[data-search-view]");
   if (searchResult) {

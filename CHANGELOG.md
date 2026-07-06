@@ -2,6 +2,16 @@
 
 All notable changes to VowSuite Wedding Planning Studio are documented here.
 
+## 1.2.0 - 2026-07-05
+
+- Collapsed mobile navigation behind a menu so planning content appears sooner.
+- Moved secondary topbar actions into a compact actions menu.
+- Increased row action target sizes for better accessibility.
+- Improved dense table spacing and horizontal scroll cues.
+- Fixed report checkbox alignment so controls stay visually connected to labels.
+- Added Day Mode quick jumps for Now, Alerts, Vendors, Contacts, and Checks.
+- Added a Privacy link to the About panel.
+
 ## 1.1.0 - 2026-07-05
 
 - Added real README screenshots for the dashboard, wedding-day mode, and About/Version panel.
