@@ -169,7 +169,7 @@
           <div class="section-head">
             <div><p class="eyebrow">Invitation intelligence</p><h2>Guest management</h2></div>
             <div class="toolbar">
-              <input id="guestSearch" type="search" placeholder="Search guests, groups, meals" />
+              <input id="guestSearch" type="search" placeholder="Search guests, sides, groups, meals" />
               <select id="guestStatusFilter"></select>
               <button id="exportGuestsBtn" class="ghost-button" type="button"><i data-lucide="download"></i>CSV</button>
               <label class="ghost-button"><i data-lucide="upload"></i>CSV<input id="guestCsvInput" type="file" accept=".csv,text/csv" hidden /></label>
@@ -177,7 +177,8 @@
           </div>
           <form id="guestForm" class="inline-form">
             <input name="name" placeholder="Guest name" required />
-            <input name="group" placeholder="Household or side" required />
+            <select name="side" id="guestSideSelect" required></select>
+            <input name="group" placeholder="Household / group" required />
             <select name="status"><option>Invited</option><option>Accepted</option><option>Declined</option><option>Maybe</option></select>
             <select name="meal"><option>Chicken</option><option>Fish</option><option>Vegetarian</option><option>Vegan</option><option>Kids</option></select>
             <input name="partySize" type="number" min="1" value="1" placeholder="Party size" />
@@ -185,8 +186,8 @@
             <button><i data-lucide="user-plus"></i>Add guest</button>
           </form>
           <div class="data-layout">
-            <div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Household</th><th>RSVP</th><th>Meal</th><th>Party</th><th>Plus-one</th><th>Invite</th><th>Reminder</th><th>Tags</th><th>Notes</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div>
-            <aside class="panel sticky-panel"><h3>Guest analytics</h3><canvas id="guestChart" width="360" height="240"></canvas><div id="mealBreakdown" class="breakdown"></div><h3>Reminder queue</h3><div id="reminderQueue" class="mini-list"></div><h3>Households</h3><div id="householdBreakdown" class="breakdown"></div></aside>
+            <div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Side</th><th>Household</th><th>RSVP</th><th>Meal</th><th>Party</th><th>Plus-one</th><th>Invite</th><th>Reminder</th><th>Tags</th><th>Notes</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div>
+            <aside class="panel sticky-panel"><h3>Guest analytics</h3><canvas id="guestChart" width="360" height="240"></canvas><div id="mealBreakdown" class="breakdown"></div><h3>Reminder queue</h3><div id="reminderQueue" class="mini-list"></div><h3>Sides</h3><div id="sideBreakdown" class="breakdown"></div><h3>Households</h3><div id="householdBreakdown" class="breakdown"></div></aside>
           </div>
         </section>
 
@@ -458,7 +459,7 @@
       <p class="muted">Plans are saved on this device. Export a JSON backup before clearing browser data, restoring demo data, or starting a new couple.</p>
       <div class="toolbar">
         <a class="ghost-link" href="https://gab8511.github.io/wedding-planning-studio/" target="_blank" rel="noreferrer">Live app</a>
-        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.2.0" target="_blank" rel="noreferrer">Release notes</a>
+        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.3.0" target="_blank" rel="noreferrer">Release notes</a>
         <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
       </div>
     </dialog>

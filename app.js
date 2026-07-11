@@ -1,7 +1,7 @@
 const STORAGE_KEY = "vowsuite-plan-v2";
 const LEGACY_STORAGE_KEY = "vowsuite-plan-v1";
 const COUPLES_STORAGE_KEY = "vowsuite-couples-v1";
-const APP_VERSION = "v1.2.0";
+const APP_VERSION = "v1.3.0";
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const today = new Date();
 
@@ -245,6 +245,35 @@ function saveSavedCouples() {
   localStorage.setItem(COUPLES_STORAGE_KEY, JSON.stringify(savedCouples));
 }
 
+function getCoupleSidesFrom(couple) {
+  const names = String(couple || "Partner 1 and Partner 2")
+    .split(/\s+(?:and|&|\+)\s+/i)
+    .map(name => name.trim())
+    .filter(Boolean);
+  if (names.length >= 2) return names.slice(0, 2);
+  return [names[0] || "Partner 1", "Partner 2"];
+}
+
+function getCoupleSides() {
+  return getCoupleSidesFrom(plan?.couple);
+}
+
+function inferGuestSide(guest, couple) {
+  const sides = getCoupleSidesFrom(couple);
+  if (sides.includes(guest.side)) return guest.side;
+  const haystack = `${guest.group || ""} ${guest.tags || ""} ${guest.notes || ""}`.toLowerCase();
+  const matched = sides.find(side => side.toLowerCase().split(/\s+/).some(part => part.length > 2 && haystack.includes(part)));
+  return matched || sides[0];
+}
+
+function renderGuestSideOptions() {
+  const sideSelect = document.getElementById("guestSideSelect");
+  if (!sideSelect) return;
+  const current = sideSelect.value;
+  const sides = getCoupleSides();
+  sideSelect.innerHTML = sides.map(side => `<option ${side === current ? "selected" : ""}>${escapeHtml(side)}</option>`).join("");
+}
+
 function migratePlan(rawPlan) {
   const merged = { ...structuredClone(demoPlan), ...rawPlan };
   merged.weights = { ...demoPlan.weights, ...(rawPlan.weights || {}) };
@@ -255,7 +284,11 @@ function migratePlan(rawPlan) {
   merged.snapshots = rawPlan.snapshots || [];
   merged.attachments = rawPlan.couple === demoPlan.couple && (!rawPlan.attachments || rawPlan.attachments.length === 0) ? demoPlan.attachments : rawPlan.attachments || [];
   merged.profile = { ...demoPlan.profile, ...(rawPlan.profile || {}) };
-  merged.guests = (rawPlan.guests || demoPlan.guests).map(g => ({ email: "", phone: "", partySize: 1, plusOne: "", inviteSent: "", inviteMethod: "Email", reminder: "No", tags: "", notes: "", ...g }));
+  merged.guests = (rawPlan.guests || demoPlan.guests).map(g => {
+    const guest = { email: "", phone: "", side: "", partySize: 1, plusOne: "", inviteSent: "", inviteMethod: "Email", reminder: "No", tags: "", notes: "", ...g };
+    guest.side = inferGuestSide(guest, merged.couple);
+    return guest;
+  });
   merged.expenses = (rawPlan.expenses || demoPlan.expenses).map(e => {
     const demoExpense = demoPlan.expenses.find(d => d.category === e.category && d.item === e.item) || {};
     const demoLikeLine = demoExpense.actual === e.actual && demoExpense.estimated === e.estimated;
@@ -415,7 +448,7 @@ function renderGlobalSearch() {
     return;
   }
   const rows = [
-    ...plan.guests.map(g => ({ view: "guests", title: g.name, copy: `${g.group} - ${g.status}` })),
+    ...plan.guests.map(g => ({ view: "guests", title: g.name, copy: `${g.side || inferGuestSide(g, plan.couple)} side - ${g.group} - ${g.status}` })),
     ...plan.vendors.map(v => ({ view: "vendors", title: v.name, copy: `${v.category} - ${v.stage}` })),
     ...plan.tasks.map(t => ({ view: "timeline", title: t.title, copy: `${t.owner} - ${t.due}` })),
     ...plan.expenses.map(e => ({ view: "budget", title: e.item, copy: `${e.category} - ${money.format(e.actual || 0)}` })),
@@ -525,12 +558,15 @@ function buildRisks() {
 function renderGuests() {
   const search = document.getElementById("guestSearch").value.toLowerCase();
   const filter = document.getElementById("guestStatusFilter").value || "All";
+  const sides = getCoupleSides();
+  renderGuestSideOptions();
   document.getElementById("guestStatusFilter").innerHTML = ["All", "Invited", "Accepted", "Declined", "Maybe"].map(s => `<option ${s === filter ? "selected" : ""}>${s}</option>`).join("");
-  const guests = plan.guests.filter(g => (filter === "All" || g.status === filter) && [g.name, g.group, g.meal, g.tags, g.notes].join(" ").toLowerCase().includes(search));
+  const guests = plan.guests.filter(g => (filter === "All" || g.status === filter) && [g.name, g.side, g.group, g.meal, g.tags, g.notes].join(" ").toLowerCase().includes(search));
   document.getElementById("guestRows").innerHTML = guests.map(g => `
     <tr>
       <td><input value="${escapeHtml(g.name)}" data-guest="${g.id}" data-field="name"></td>
       <td><input value="${escapeHtml(g.email)}" data-guest="${g.id}" data-field="email" placeholder="Email"><input value="${escapeHtml(g.phone)}" data-guest="${g.id}" data-field="phone" placeholder="Phone"></td>
+      <td><select data-guest="${g.id}" data-field="side">${sides.map(side => `<option ${side === g.side ? "selected" : ""}>${escapeHtml(side)}</option>`).join("")}</select></td>
       <td><input value="${escapeHtml(g.group)}" data-guest="${g.id}" data-field="group"></td>
       <td><select data-guest="${g.id}" data-field="status">${["Invited","Accepted","Declined","Maybe"].map(s => `<option ${s === g.status ? "selected" : ""}>${s}</option>`).join("")}</select></td>
       <td><select data-guest="${g.id}" data-field="meal">${["Chicken","Fish","Vegetarian","Vegan","Kids"].map(s => `<option ${s === g.meal ? "selected" : ""}>${s}</option>`).join("")}</select></td>
@@ -541,13 +577,15 @@ function renderGuests() {
       <td><input value="${escapeHtml(g.tags)}" data-guest="${g.id}" data-field="tags"></td>
       <td><input value="${escapeHtml(g.notes)}" data-guest="${g.id}" data-field="notes"></td>
       <td><button class="row-action" data-delete-guest="${g.id}"><i data-lucide="trash-2"></i></button></td>
-    </tr>`).join("") || `<tr><td colspan="12"><div class="empty-state">No guests yet. Add guests manually or import a CSV to start the RSVP tracker.</div></td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="13"><div class="empty-state">No guests yet. Add guests manually or import a CSV to start the RSVP tracker.</div></td></tr>`;
   drawDonut("guestChart", byStatus(plan.guests, "status"), ["#2f7d59", "#b18a45", "#b34343", "#7a8894"]);
   const meals = plan.guests.filter(g => g.status === "Accepted").reduce((acc, g) => {
     acc[g.meal] = (acc[g.meal] || 0) + Number(g.partySize || 1);
     return acc;
   }, {});
   document.getElementById("mealBreakdown").innerHTML = Object.entries(meals).map(([k, v]) => `<div><span>${escapeHtml(k)}</span><strong>${v}</strong></div>`).join("") || `<p class="muted">No accepted meals yet.</p>`;
+  const sideCounts = byStatus(plan.guests, "side");
+  document.getElementById("sideBreakdown").innerHTML = sides.map(side => `<div><span>${escapeHtml(side)}</span><strong>${sideCounts[side] || 0}</strong></div>`).join("");
   const households = byStatus(plan.guests, "group");
   document.getElementById("householdBreakdown").innerHTML = Object.entries(households).map(([k, v]) => `<div><span>${escapeHtml(k)}</span><strong>${v}</strong></div>`).join("");
   const reminders = plan.guests.filter(g => g.reminder === "Yes" || ["Invited", "Maybe"].includes(g.status)).slice(0, 8);
@@ -1060,10 +1098,11 @@ function renderVendorPortalPreview() {
 
 function renderRelationshipMap() {
   const groups = plan.guests.reduce((acc, guest) => {
-    acc[guest.group] = acc[guest.group] || { accepted: 0, total: 0, vip: 0 };
-    acc[guest.group].total += Number(guest.partySize || 1);
-    if (guest.status === "Accepted") acc[guest.group].accepted += Number(guest.partySize || 1);
-    if ((guest.tags || "").toLowerCase().includes("vip")) acc[guest.group].vip += 1;
+    const key = `${guest.side || inferGuestSide(guest, plan.couple)} - ${guest.group}`;
+    acc[key] = acc[key] || { accepted: 0, total: 0, vip: 0 };
+    acc[key].total += Number(guest.partySize || 1);
+    if (guest.status === "Accepted") acc[key].accepted += Number(guest.partySize || 1);
+    if ((guest.tags || "").toLowerCase().includes("vip")) acc[key].vip += 1;
     return acc;
   }, {});
   document.getElementById("relationshipMap").innerHTML = Object.entries(groups).map(([group, data]) => `<article class="mini-row"><strong>${escapeHtml(group)}</strong><small>${data.accepted}/${data.total} accepted by party size | ${data.vip} VIP flags</small></article>`).join("") || `<p class="muted">No guest groups mapped.</p>`;
@@ -1371,6 +1410,7 @@ document.addEventListener("input", event => {
   savePlan();
   if (target.id === "coupleNames") setText("coupleTitle", plan.couple);
   if (target.id === "globalSearch") renderGlobalSearch();
+  if (target.id === "coupleNames") renderGuestSideOptions();
   if (["guestSearch", "guestStatusFilter", "taskFilter", "runVendorFilter", "weddingDate", "budgetTarget", "rsvpDeadline", "ceremonyTime", "receptionTime", "portalPinSetting"].includes(target.id) || target.dataset.weight || target.dataset.budgetCap || target.dataset.financeField) render();
 });
 
@@ -1424,7 +1464,7 @@ function handleForm(id, handler) {
 }
 
 handleForm("guestForm", data => {
-  plan.guests.push({ id: uid(), name: data.name, email: "", phone: "", group: data.group, status: data.status, meal: data.meal, partySize: Number(data.partySize || 1), plusOne: data.plusOne || "", inviteSent: "", inviteMethod: "Email", reminder: "No", tags: "", notes: "" });
+  plan.guests.push({ id: uid(), name: data.name, email: "", phone: "", side: data.side || getCoupleSides()[0], group: data.group, status: data.status, meal: data.meal, partySize: Number(data.partySize || 1), plusOne: data.plusOne || "", inviteSent: "", inviteMethod: "Email", reminder: "No", tags: "", notes: "" });
   recordChange(`Added guest ${data.name}`);
 });
 handleForm("setupForm", data => {
@@ -1580,7 +1620,7 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   recordChange("Exported JSON plan backup");
 });
 document.getElementById("exportGuestsBtn").addEventListener("click", () => {
-  const headers = ["name", "email", "phone", "group", "status", "meal", "partySize", "plusOne", "inviteSent", "inviteMethod", "reminder", "tags", "notes"];
+  const headers = ["name", "email", "phone", "side", "group", "status", "meal", "partySize", "plusOne", "inviteSent", "inviteMethod", "reminder", "tags", "notes"];
   const rows = [headers.join(","), ...plan.guests.map(g => headers.map(h => csvCell(g[h])).join(","))];
   downloadFile("vowsuite-guests.csv", rows.join("\n"), "text/csv");
   recordChange("Exported guest CSV");
@@ -1709,6 +1749,7 @@ function importGuestCsv(file) {
           name: row.name || row.Name || "Imported guest",
           email: row.email || row.Email || "",
           phone: row.phone || row.Phone || "",
+          side: row.side || row.Side || "",
           group: row.group || row.household || row.Household || "Imported",
           status: row.status || "Invited",
           meal: row.meal || "Chicken",
@@ -1722,6 +1763,7 @@ function importGuestCsv(file) {
         };
       });
       pushUndo();
+      imported.forEach(guest => { guest.side = inferGuestSide(guest, plan.couple); });
       plan.guests.push(...imported);
       recordChange(`Imported ${imported.length} guests from CSV`);
       render();

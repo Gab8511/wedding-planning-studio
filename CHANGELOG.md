@@ -2,6 +2,14 @@
 
 All notable changes to VowSuite Wedding Planning Studio are documented here.
 
+## 1.3.0 - 2026-07-10
+
+- Added a structured guest Side field selected from the two people getting married.
+- Kept household/group as a separate guest field.
+- Added side counts to guest analytics.
+- Included guest side in table editing, CSV export, CSV import, global search, and portal relationship mapping.
+- Added migration logic to infer side for existing guests from current household/group data.
+
 ## 1.2.0 - 2026-07-05
 
 - Collapsed mobile navigation behind a menu so planning content appears sooner.

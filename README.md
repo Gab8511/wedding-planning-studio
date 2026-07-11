@@ -30,6 +30,8 @@ https://gab8511.github.io/wedding-planning-studio/
 
 ![VowSuite dashboard preview](docs/screenshots/dashboard.png)
 
+![Guest side field preview](docs/screenshots/guest-side-field.png)
+
 ![Wedding-day mode preview](docs/screenshots/day-mode.png)
 
 ![About and version panel](docs/screenshots/about-version.png)
