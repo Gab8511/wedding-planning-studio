@@ -418,6 +418,22 @@
             <section class="panel"><h2>Planning assistant</h2><div class="toolbar"><button id="generateAssistantBtn" class="ghost-button"><i data-lucide="brain"></i>Refresh guidance</button></div><div id="assistantPanel" class="mini-list"></div></section>
             <section class="panel"><h2>Checklist library</h2><div class="toolbar"><select id="checklistTemplateSelect"><option>Luxury final month</option><option>Destination weekend</option><option>Backyard logistics</option><option>Cultural multi-event</option></select><button id="applyChecklistBtn" class="ghost-button"><i data-lucide="copy-plus"></i>Apply</button></div><div id="checklistLibraryPreview" class="mini-list"></div></section>
             <section class="panel"><h2>Share readiness</h2><div id="shareReadiness" class="mini-list"></div></section>
+            <section class="panel wide-panel">
+              <h2>Cloud sync</h2>
+              <div class="cloud-sync-grid">
+                <label>Supabase project URL<input id="cloudSyncUrl" type="url" placeholder="https://your-project.supabase.co" autocomplete="off" /></label>
+                <label>Anon public key<input id="cloudSyncAnonKey" type="password" placeholder="eyJ..." autocomplete="off" /></label>
+                <label>Shared sync ID<input id="cloudSyncId" placeholder="chen-martinez-2026" autocomplete="off" /></label>
+              </div>
+              <div class="toolbar sync-toolbar">
+                <button id="cloudSyncSaveBtn" class="ghost-button"><i data-lucide="save"></i>Save settings</button>
+                <button id="cloudSyncGenerateBtn" class="ghost-button"><i data-lucide="sparkles"></i>Generate ID</button>
+                <button id="cloudPushBtn" class="ghost-button"><i data-lucide="cloud-upload"></i>Push</button>
+                <button id="cloudPullBtn" class="ghost-button"><i data-lucide="cloud-download"></i>Pull</button>
+              </div>
+              <label class="sync-toggle"><input id="cloudAutoPush" type="checkbox" /> Auto-push local changes</label>
+              <div id="cloudSyncStatus" class="mini-list"></div>
+            </section>
             <section class="panel"><h2>Backend launch plan</h2><div id="backendReadiness" class="mini-list"></div></section>
           </div>
         </section>
@@ -459,7 +475,7 @@
       <p class="muted">Plans are saved on this device. Export a JSON backup before clearing browser data, restoring demo data, or starting a new couple.</p>
       <div class="toolbar">
         <a class="ghost-link" href="https://gab8511.github.io/wedding-planning-studio/" target="_blank" rel="noreferrer">Live app</a>
-        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.3.0" target="_blank" rel="noreferrer">Release notes</a>
+        <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/releases/tag/v1.4.0" target="_blank" rel="noreferrer">Release notes</a>
         <a class="ghost-link" href="https://github.com/Gab8511/wedding-planning-studio/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
       </div>
     </dialog>

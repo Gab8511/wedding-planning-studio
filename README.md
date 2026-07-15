@@ -62,13 +62,14 @@ https://gab8511.github.io/wedding-planning-studio/
 
 ## Data Storage
 
-The app currently stores plans in browser local storage. Use **Export plan** and **Import plan** to move plans between devices or browsers.
+The app stores plans in browser local storage by default. Use **Export plan** and **Import plan** to move plans between devices or browsers, or configure optional Supabase sync from Studio management for a shared cloud copy.
 
 Read the privacy note before entering real client, guest, vendor, financial, or contract data: [PRIVACY.md](PRIVACY.md).
 
 ## Project Docs
 
 - [Changelog](CHANGELOG.md)
+- [Cloud sync setup](CLOUD_SYNC.md)
 - [Roadmap](ROADMAP.md)
 - [Privacy](PRIVACY.md)
 - [License](LICENSE)

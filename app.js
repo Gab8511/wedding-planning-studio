@@ -1,7 +1,8 @@
 const STORAGE_KEY = "vowsuite-plan-v2";
 const LEGACY_STORAGE_KEY = "vowsuite-plan-v1";
 const COUPLES_STORAGE_KEY = "vowsuite-couples-v1";
-const APP_VERSION = "v1.3.0";
+const CLOUD_SYNC_STORAGE_KEY = "vowsuite-cloud-sync-v1";
+const APP_VERSION = "v1.4.0";
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const today = new Date();
 
@@ -159,6 +160,9 @@ let undoStack = [];
 let draggedSeat = null;
 let saveTimer = null;
 let savedCouples = loadSavedCouples();
+let cloudSyncTimer = null;
+let cloudSyncBusy = false;
+let cloudStatus = { state: "idle", message: "Local storage is active. Add cloud settings when you want shared access." };
 
 function createBlankPlan() {
   const nextYear = today.getFullYear() + 1;
@@ -361,6 +365,136 @@ function savePlan() {
     status.textContent = "Saved";
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { status.textContent = "Autosaved"; }, 900);
+  }
+  const settings = loadCloudSyncSettings();
+  if (settings.autoPush && isCloudSyncReady(settings) && !cloudSyncBusy) scheduleCloudPush();
+}
+
+function loadCloudSyncSettings() {
+  try {
+    return { url: "", anonKey: "", syncId: "", autoPush: false, ...JSON.parse(localStorage.getItem(CLOUD_SYNC_STORAGE_KEY) || "{}") };
+  } catch {
+    return { url: "", anonKey: "", syncId: "", autoPush: false };
+  }
+}
+
+function saveCloudSyncSettings(settings) {
+  localStorage.setItem(CLOUD_SYNC_STORAGE_KEY, JSON.stringify({
+    url: normalizeSupabaseUrl(settings.url),
+    anonKey: settings.anonKey.trim(),
+    syncId: settings.syncId.trim(),
+    autoPush: Boolean(settings.autoPush)
+  }));
+}
+
+function normalizeSupabaseUrl(url) {
+  return String(url || "").trim().replace(/\/+$/, "");
+}
+
+function isCloudSyncReady(settings = loadCloudSyncSettings()) {
+  return Boolean(normalizeSupabaseUrl(settings.url) && settings.anonKey && settings.syncId);
+}
+
+function cloudHeaders(settings) {
+  return {
+    apikey: settings.anonKey,
+    Authorization: `Bearer ${settings.anonKey}`,
+    "Content-Type": "application/json"
+  };
+}
+
+function cloudRowsUrl(settings, query = "") {
+  const base = `${normalizeSupabaseUrl(settings.url)}/rest/v1/wedding_plans`;
+  return query ? `${base}?${query}` : base;
+}
+
+function setCloudStatus(message, state = "idle") {
+  cloudStatus = { message, state };
+  const target = document.getElementById("cloudSyncStatus");
+  if (target) target.innerHTML = renderCloudStatus();
+}
+
+function renderCloudStatus() {
+  const settings = loadCloudSyncSettings();
+  const readiness = isCloudSyncReady(settings) ? "Ready for shared sync" : "Needs URL, anon key, and sync ID";
+  const mode = settings.autoPush ? "Auto-push on local changes" : "Manual push/pull";
+  return [
+    `<article class="mini-row sync-${escapeHtml(cloudStatus.state)}"><strong>${escapeHtml(readiness)}</strong><small>${escapeHtml(cloudStatus.message)}</small></article>`,
+    `<article class="mini-row"><strong>${escapeHtml(mode)}</strong><small>Sync ID: ${escapeHtml(settings.syncId || "Not set")}</small></article>`
+  ].join("");
+}
+
+function generateCloudSyncId() {
+  const date = plan.weddingDate || new Date().toISOString().slice(0, 10);
+  const randomBytes = new Uint8Array(4);
+  crypto.getRandomValues(randomBytes);
+  const suffix = Array.from(randomBytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  return `${plan.couple}-${date}-${suffix}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72) || `wedding-${Date.now()}`;
+}
+
+function scheduleCloudPush() {
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => pushCloudPlan({ silent: true }), 1400);
+}
+
+async function pushCloudPlan(options = {}) {
+  const settings = loadCloudSyncSettings();
+  if (!isCloudSyncReady(settings)) {
+    setCloudStatus("Add cloud settings before pushing.", "warn");
+    return false;
+  }
+  cloudSyncBusy = true;
+  if (!options.silent) setCloudStatus("Pushing the current plan to cloud storage...", "busy");
+  try {
+    const response = await fetch(cloudRowsUrl(settings), {
+      method: "POST",
+      headers: { ...cloudHeaders(settings), Prefer: "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify({ id: settings.syncId, data: plan, updated_at: new Date().toISOString() })
+    });
+    if (!response.ok) throw new Error(await response.text() || `Cloud push failed (${response.status})`);
+    setCloudStatus("Cloud copy updated.", "ok");
+    return true;
+  } catch (error) {
+    setCloudStatus(error.message || "Cloud push failed.", "error");
+    return false;
+  } finally {
+    cloudSyncBusy = false;
+  }
+}
+
+async function pullCloudPlan() {
+  const settings = loadCloudSyncSettings();
+  if (!isCloudSyncReady(settings)) {
+    setCloudStatus("Add cloud settings before pulling.", "warn");
+    return false;
+  }
+  cloudSyncBusy = true;
+  setCloudStatus("Pulling the shared plan from cloud storage...", "busy");
+  try {
+    const response = await fetch(cloudRowsUrl(settings, `id=eq.${encodeURIComponent(settings.syncId)}&select=id,data,updated_at&limit=1`), {
+      headers: cloudHeaders(settings)
+    });
+    if (!response.ok) throw new Error(await response.text() || `Cloud pull failed (${response.status})`);
+    const rows = await response.json();
+    if (!rows.length) {
+      setCloudStatus("No cloud plan exists for this sync ID yet. Push this plan first.", "warn");
+      return false;
+    }
+    pushUndo();
+    plan = migratePlan(rows[0].data || {});
+    recordChange(`Pulled cloud sync ${settings.syncId}`);
+    setCloudStatus(`Pulled cloud plan from ${rows[0].updated_at ? new Date(rows[0].updated_at).toLocaleString() : "cloud storage"}.`, "ok");
+    render();
+    return true;
+  } catch (error) {
+    setCloudStatus(error.message || "Cloud pull failed.", "error");
+    return false;
+  } finally {
+    cloudSyncBusy = false;
   }
 }
 
@@ -1027,6 +1161,21 @@ function renderStudio() {
   document.getElementById("assistantPanel").innerHTML = buildAssistantGuidance().map(item => `<article class="mini-row"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.copy)}</small></article>`).join("");
   renderChecklistLibrary();
   renderShareReadiness();
+  renderCloudSync();
+}
+
+function renderCloudSync() {
+  const settings = loadCloudSyncSettings();
+  const urlInput = document.getElementById("cloudSyncUrl");
+  if (!urlInput) return;
+  urlInput.value = settings.url || "";
+  document.getElementById("cloudSyncAnonKey").value = settings.anonKey || "";
+  document.getElementById("cloudSyncId").value = settings.syncId || "";
+  document.getElementById("cloudAutoPush").checked = Boolean(settings.autoPush);
+  const ready = isCloudSyncReady(settings);
+  document.getElementById("cloudPushBtn").disabled = !ready || cloudSyncBusy;
+  document.getElementById("cloudPullBtn").disabled = !ready || cloudSyncBusy;
+  document.getElementById("cloudSyncStatus").innerHTML = renderCloudStatus();
 }
 
 function renderChecklistLibrary() {
@@ -1063,12 +1212,13 @@ function renderShareReadiness() {
     ["Client portal PIN set", Boolean(plan.portal.pin && plan.portal.pin !== "0000")],
     ["Client packet sections selected", Object.values(plan.portal.share).some(Boolean)],
     ["Saved couple to dashboard", savedCouples.some(couple => couple.couple === plan.couple)],
+    ["Cloud sync configured", isCloudSyncReady()],
     ["Documents indexed", plan.documents.length > 0],
     ["Attachment metadata indexed", plan.attachments.length > 0]
   ];
   document.getElementById("shareReadiness").innerHTML = readiness.map(([title, done]) => `<article class="mini-row"><strong>${done ? "Ready" : "Missing"}: ${escapeHtml(title)}</strong><small>${done ? "Prepared for a polished handoff." : "Recommended before sending to clients or vendors."}</small></article>`).join("");
   document.getElementById("backendReadiness").innerHTML = [
-    ["Database", "Move plans, guests, vendors, and files from local storage into hosted tables."],
+    ["Database", "Use Cloud sync for shared plan data, then expand into dedicated hosted tables as the product grows."],
     ["Authentication", "Add planner, couple, vendor, and family roles."],
     ["Storage", "Store real contracts, invoices, floor plans, and moodboard assets."],
     ["Public routes", "Create /portal, /vendor, and /rsvp links per couple."],
@@ -1560,6 +1710,29 @@ document.getElementById("saveCoupleBtn").addEventListener("click", () => {
   saveSavedCouples();
   recordChange(`Saved ${plan.couple} to studio dashboard`);
   render();
+});
+document.getElementById("cloudSyncSaveBtn").addEventListener("click", () => {
+  saveCloudSyncSettings({
+    url: document.getElementById("cloudSyncUrl").value,
+    anonKey: document.getElementById("cloudSyncAnonKey").value,
+    syncId: document.getElementById("cloudSyncId").value,
+    autoPush: document.getElementById("cloudAutoPush").checked
+  });
+  setCloudStatus("Cloud sync settings saved in this browser.", isCloudSyncReady() ? "ok" : "warn");
+  renderCloudSync();
+});
+document.getElementById("cloudSyncGenerateBtn").addEventListener("click", () => {
+  document.getElementById("cloudSyncId").value = generateCloudSyncId();
+  setCloudStatus("Generated a shareable sync ID. Save settings before syncing.", "idle");
+});
+document.getElementById("cloudPushBtn").addEventListener("click", async () => {
+  await pushCloudPlan();
+  renderCloudSync();
+});
+document.getElementById("cloudPullBtn").addEventListener("click", async () => {
+  if (!window.confirm("Pulling will replace this browser's current plan with the cloud copy. Continue?")) return;
+  await pullCloudPlan();
+  renderCloudSync();
 });
 document.getElementById("applyChecklistBtn").addEventListener("click", () => {
   pushUndo();

@@ -8,7 +8,11 @@ Wedding plans are stored in the browser's local storage on the device where the 
 
 ## Data Sharing
 
-The app does not automatically send wedding data to a remote server. Data only leaves the browser when a user chooses to export, copy, print, download, or otherwise share it.
+The app does not automatically send wedding data to a remote server unless optional cloud sync is configured. Data leaves the browser when a user chooses to export, copy, print, download, push to cloud sync, pull from cloud sync, or otherwise share it.
+
+## Optional Cloud Sync
+
+Cloud sync uses the Supabase project URL, anon public key, and shared sync ID saved in the browser. Do not enter a service role key. Privacy and access control depend on the Supabase row-level security policies configured by the workspace owner.
 
 ## Backups
 
@@ -20,4 +24,4 @@ Avoid entering sensitive real-world personal, financial, or contract information
 
 ## Future Services
 
-If hosted accounts, cloud sync, email integrations, payments, or vendor portals are added later, this privacy file should be updated before those features are released.
+If hosted accounts, email integrations, payments, or public vendor portals are added later, this privacy file should be updated before those features are released.

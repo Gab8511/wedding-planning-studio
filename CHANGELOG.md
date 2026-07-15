@@ -2,6 +2,14 @@
 
 All notable changes to VowSuite Wedding Planning Studio are documented here.
 
+## 1.4.0 - 2026-07-15
+
+- Added optional Supabase cloud sync settings in Studio management.
+- Added manual Push and Pull controls for shared wedding-plan data.
+- Added generated shared sync IDs and optional auto-push for local changes.
+- Added cloud sync readiness status to the Studio share checklist.
+- Added cloud sync setup documentation with Supabase SQL and security notes.
+
 ## 1.3.0 - 2026-07-10
 
 - Added a structured guest Side field selected from the two people getting married.

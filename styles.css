@@ -611,6 +611,42 @@ td input, td select { padding: 8px 9px; min-width: 138px; }
   grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
   gap: 16px;
 }
+.wide-panel {
+  grid-column: 1 / -1;
+}
+.cloud-sync-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.cloud-sync-grid label,
+.sync-toggle {
+  color: var(--muted);
+  font-size: 12px;
+  display: grid;
+  gap: 6px;
+}
+.sync-toolbar {
+  margin-top: 12px;
+}
+.sync-toggle {
+  width: fit-content;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf4;
+}
+.sync-toggle input {
+  width: 18px;
+  height: 18px;
+}
+.sync-ok strong { color: var(--ok); }
+.sync-error strong { color: var(--danger); }
+.sync-warn strong, .sync-busy strong { color: var(--gold); }
 .compact-form { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .mini-list {
   display: grid;
